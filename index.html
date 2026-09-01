@@ -231,9 +231,26 @@ table.list tbody tr:hover{background:var(--surface-2)}
   html,body{background:#fff!important;margin:0}
   body>*{display:none!important}
   #print-root{display:block!important}
-  .sheet{box-shadow:none;border-radius:0;border:1px solid #ddd;page-break-after:always;break-after:page;margin:0 auto;max-width:100%}
+  .sheet{box-shadow:none;border-radius:0;border:0;margin:0 auto;max-width:100%;
+    page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
   .sheet:last-child{page-break-after:auto;break-after:auto}
-  @page{margin:10mm}
+  /* บีบให้พอดี 1 หน้า ไม่ทะลุ */
+  .sheet .hd{padding:12px 18px}
+  .sheet .hd .b{font-size:15px} .sheet .hd .b svg{width:17px;height:17px}
+  .sheet .hd .m strong{font-size:13px}
+  .sheet .body{padding:12px 18px 14px}
+  .namecard{padding:9px 14px}
+  .namecard .fn{font-size:14px}
+  .slab{margin:10px 0 2px;font-size:10px}
+  .srow{padding:4px 0;font-size:12px}
+  .srow .l small{font-size:9.5px}
+  .srow.sum{font-size:12.5px}
+  .netbox{padding:10px 14px;margin-top:10px}
+  .netbox .l{font-size:12px} .netbox .v{font-size:18px}
+  .bankbox{padding:9px 12px;margin-top:9px;font-size:11px}
+  .slipwarn{margin-top:9px;font-size:10px}
+  .sheet .ft{padding:6px;font-size:9px}
+  @page{margin:9mm}
 }
 </style>
 
