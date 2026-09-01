@@ -1,0 +1,895 @@
+<title>LUNA Payslip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --bg:#f7f3ee; --surface:#ffffff; --surface-2:#fbf7f2; --surface-3:#f2ebe1;
+  --ink:#2c2521; --ink-soft:#6f6459; --ink-faint:#9a8d7e;
+  --line:#e6ddd1; --line-strong:#d8ccbb;
+  --accent:#e07a4f; --accent-ink:#b45c37; --accent-soft:#f6ddcd;
+  --neg:#c23b2e; --pos:#3c7a52; --warn-bg:#fdf0ec; --warn-ink:#b5482f;
+  --focus:#2f6f9e;
+  --sheet-shadow:0 1px 2px rgba(60,40,25,.06),0 12px 34px rgba(60,40,25,.10);
+  --radius:14px;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme:dark){
+    --bg:#1e1a17; --surface:#2a2420; --surface-2:#312a24; --surface-3:#3a322b;
+    --ink:#f1e9df; --ink-soft:#b6a897; --ink-faint:#8a7c6c;
+    --line:#3c342d; --line-strong:#4a4038;
+    --accent:#e88a5f; --accent-ink:#f0a37f; --accent-soft:#4a382e;
+    --neg:#e5715f; --pos:#63a97e; --warn-bg:#3a2620; --warn-ink:#eaa08c;
+    --focus:#7fb4d8;
+    --sheet-shadow:0 1px 2px rgba(0,0,0,.3),0 14px 40px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1e1a17; --surface:#2a2420; --surface-2:#312a24; --surface-3:#3a322b;
+  --ink:#f1e9df; --ink-soft:#b6a897; --ink-faint:#8a7c6c;
+  --line:#3c342d; --line-strong:#4a4038;
+  --accent:#e88a5f; --accent-ink:#f0a37f; --accent-soft:#4a382e;
+  --neg:#e5715f; --pos:#63a97e; --warn-bg:#3a2620; --warn-ink:#eaa08c;
+  --focus:#7fb4d8;
+  --sheet-shadow:0 1px 2px rgba(0,0,0,.3),0 14px 40px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Sarabun",-apple-system,"Segoe UI",Tahoma,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Prompt",sans-serif;font-weight:600;margin:0;text-wrap:balance;line-height:1.25}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.topbar{
+  position:sticky;top:0;z-index:20;
+  display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;
+  padding:14px clamp(16px,4vw,40px);
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+.brand svg{width:26px;height:26px;color:var(--accent);flex:none}
+.brand .name{font-family:"Prompt";font-weight:600;font-size:19px;letter-spacing:.01em}
+.brand .sub{font-size:12px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase}
+.period{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
+.period input{
+  font-family:inherit;font-size:14px;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line-strong);
+  border-radius:9px;padding:7px 10px;
+}
+.period .be{font-family:"Prompt";font-weight:600;color:var(--ink);font-size:14px}
+.icon-btn{
+  border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink-soft);
+  width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:16px;
+  display:grid;place-items:center;transition:color .15s,border-color .15s;
+}
+.icon-btn:hover{color:var(--accent-ink);border-color:var(--accent)}
+
+.tabs{
+  display:flex;gap:4px;padding:10px clamp(16px,4vw,40px) 0;
+  border-bottom:1px solid var(--line);background:var(--bg);
+  position:sticky;top:66px;z-index:15;overflow-x:auto;
+}
+.tabs button{
+  border:0;background:none;color:var(--ink-soft);cursor:pointer;
+  font-family:"Prompt";font-weight:500;font-size:14.5px;
+  padding:11px 15px 13px;border-bottom:2.5px solid transparent;white-space:nowrap;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+
+main{padding:clamp(18px,3.5vw,34px) clamp(16px,4vw,40px) 80px;max-width:1240px;margin:0 auto}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:34px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+/* ---------- cards / controls ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.card + .card{margin-top:18px}
+.card h3{font-size:15px;letter-spacing:.01em}
+.muted{color:var(--ink-soft)}
+.faint{color:var(--ink-faint);font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+label.field{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink-soft);letter-spacing:.02em}
+input[type=text],input[type=number],select{
+  font-family:inherit;font-size:14px;color:var(--ink);
+  background:var(--surface-2);border:1px solid var(--line-strong);border-radius:9px;
+  padding:8px 10px;width:100%;
+}
+input[type=number]{font-family:"IBM Plex Mono",monospace;text-align:right}
+input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
+
+.btn{
+  font-family:"Prompt";font-weight:500;font-size:13.5px;cursor:pointer;
+  border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);
+  padding:9px 15px;border-radius:10px;transition:background .15s,border-color .15s;
+}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:none}
+.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px}
+.btn.danger{color:var(--neg);border-color:color-mix(in srgb,var(--neg) 40%,var(--line-strong))}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:"Prompt";
+  padding:3px 9px;border-radius:999px;letter-spacing:.02em}
+.pill.model{background:var(--accent-soft);color:var(--accent-ink)}
+.pill.admin{background:var(--surface-3);color:var(--ink-soft)}
+.pill.resigned{background:var(--surface-3);color:var(--ink-faint)}
+.pill.paid{background:color-mix(in srgb,var(--pos) 18%,transparent);color:var(--pos)}
+
+/* ---------- employee table ---------- */
+table.list{width:100%;border-collapse:collapse;font-size:14px}
+table.list th{text-align:left;font-family:"Prompt";font-weight:500;font-size:12px;
+  color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.list td{padding:10px;border-bottom:1px solid var(--line)}
+table.list tr:last-child td{border-bottom:0}
+table.list tbody tr:hover{background:var(--surface-2)}
+.tag-name{font-family:"Prompt";font-weight:600}
+
+/* ---------- line-item editor ---------- */
+.section-label{font-family:"Prompt";font-weight:600;font-size:12px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent-ink);margin:18px 0 8px}
+.li{display:grid;grid-template-columns:1.6fr .7fr .5fr .9fr auto auto;gap:8px;align-items:center;
+  padding:8px 0;border-bottom:1px dashed var(--line)}
+.li input[type=text]{background:transparent;border:0;border-bottom:1px solid transparent;padding:6px 2px;font-weight:500}
+.li input[type=text]:hover,.li input[type=text]:focus{border-bottom-color:var(--line-strong);background:var(--surface-2)}
+.li .unit{font-size:12px;color:var(--ink-faint);text-align:center}
+.li .amt{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right;font-weight:500}
+.li .amt.neg{color:var(--neg)}
+.li .x{border:0;background:none;color:var(--ink-faint);cursor:pointer;font-size:16px;line-height:1;padding:4px}
+.li .x:hover{color:var(--neg)}
+.li-head{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--line);padding-bottom:6px}
+@media (max-width:560px){
+  .li{grid-template-columns:1fr 1fr;gap:6px}
+  .li-head{display:none}
+  .li .amt{grid-column:1/2}
+}
+.totals{margin-top:14px;border-top:2px solid var(--line-strong);padding-top:12px;display:grid;gap:7px}
+.totals .t{display:flex;justify-content:space-between;font-size:14px}
+.totals .t.net{font-family:"Prompt";font-weight:700;font-size:17px}
+.totals .t.net .mono{color:var(--pos)}
+.totals .t.net.bad .mono{color:var(--neg)}
+
+.warn{background:var(--warn-bg);color:var(--warn-ink);border:1px solid color-mix(in srgb,var(--warn-ink) 30%,transparent);
+  border-radius:10px;padding:10px 13px;font-size:13px;display:flex;gap:8px;margin-top:14px}
+
+.empty{text-align:center;color:var(--ink-faint);padding:38px 10px;font-size:14px}
+
+.addform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.addform input[type=text]{flex:1;min-width:150px}
+.addform select{width:auto;min-width:140px}
+.addnote{font-size:12px;color:var(--ink-faint);margin-top:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--bg);font-size:13.5px;font-family:"Prompt";
+  padding:11px 18px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);
+  opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* full-screen print preview overlay (works even where window.print is blocked) */
+.printview{position:fixed;inset:0;z-index:70;background:var(--bg);overflow:auto;padding:24px 16px 60px}
+.printview .pv-bar{max-width:640px;margin:0 auto 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.printview .pv-slips{max-width:520px;margin:0 auto;display:grid;gap:24px}
+
+/* ---------- dashboard ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .k{font-size:12px;color:var(--ink-faint);font-family:"Prompt";letter-spacing:.04em}
+.kpi .v{font-family:"Prompt";font-weight:600;font-size:22px;margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* ================= PAYSLIP SHEET (always light — it is a document) ================= */
+.preview-wrap{position:sticky;top:120px}
+.preview-wrap .cap{font-size:12px;color:var(--ink-faint);font-family:"Prompt";letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sheet{
+  background:#fff;color:#2c2521;border-radius:14px;overflow:hidden;box-shadow:var(--sheet-shadow);
+  font-family:"Sarabun",sans-serif;
+}
+.sheet .hd{background:linear-gradient(107deg,#fbe8dc,#f6d3bf 52%,#e9b79b);padding:20px 22px 18px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.sheet .hd .b{display:flex;align-items:center;gap:9px;font-family:"Prompt";font-weight:600;font-size:17px;color:#7a3f22}
+.sheet .hd .b svg{width:20px;height:20px;color:#e07a4f}
+.sheet .hd .m{text-align:right;font-size:12px;color:#8a5636;line-height:1.4}
+.sheet .hd .m strong{display:block;font-family:"Prompt";font-weight:600;font-size:15px;color:#6d3c20}
+.sheet .body{padding:20px 22px 24px}
+.namecard{background:linear-gradient(100deg,#e88a5f,#df7248);border-radius:10px;padding:13px 16px;color:#fff}
+.namecard .nn{font-size:11px;letter-spacing:.06em;opacity:.85;font-family:"Prompt"}
+.namecard .fn{font-family:"Prompt";font-weight:600;font-size:16px;margin-top:1px}
+.slab{font-family:"Prompt";font-weight:600;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#b96a45;margin:18px 0 4px}
+.srow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #ece3d6;font-size:13.5px}
+.srow .l{color:#3f3730}
+.srow .l small{display:block;color:#a08b78;font-size:11px;font-family:"IBM Plex Mono",monospace}
+.srow .v{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color:#2c2521}
+.srow .v.neg{color:#c23b2e}
+.srow.sum{border-bottom:0;border-top:1.5px solid #d8ccbb;margin-top:2px;font-family:"Prompt";font-weight:600;font-size:14px}
+.netbox{background:#38302a;color:#fff;border-radius:10px;padding:15px 18px;margin-top:16px;
+  display:flex;justify-content:space-between;align-items:center}
+.netbox .l{font-family:"Prompt";font-weight:500;font-size:13px;letter-spacing:.02em}
+.netbox .v{font-family:"Prompt";font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.netbox.bad{background:#7c2b22}
+.bankbox{margin-top:14px;background:#faf3ee;border:1px solid #eaddce;border-radius:10px;padding:12px 15px;font-size:12.5px}
+.bankbox .t{font-family:"Prompt";font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#b96a45;margin-bottom:5px}
+.bankbox .line{color:#4a4038}
+.bankbox .none{color:#a08b78;font-style:italic}
+.slipwarn{margin-top:14px;display:flex;gap:7px;align-items:flex-start;font-size:11.5px;color:#9a4d38;line-height:1.4}
+.slipwarn svg{width:14px;height:14px;flex:none;margin-top:1px}
+.sheet .ft{text-align:center;font-size:10px;color:#b0a08e;padding:10px;border-top:1px solid #f0e7da;font-family:"IBM Plex Mono",monospace}
+
+/* ---------- print ---------- */
+#print-root{display:none}
+@media print{
+  body{background:#fff}
+  .topbar,.tabs,main,.printview,.toast{display:none!important}
+  #print-root{display:block}
+  .sheet{box-shadow:none;border-radius:0;border:1px solid #ddd;page-break-after:always;margin:0 auto;max-width:148mm}
+  .sheet:last-child{page-break-after:auto}
+  @page{size:A5;margin:8mm}
+}
+</style>
+
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 2.5a9.5 9.5 0 1 0 6 16.9A7.5 7.5 0 0 1 15.5 2.5z" fill="currentColor"/></svg>
+    <div>
+      <div class="name">LUNA Brand</div>
+      <div class="sub">Payslip</div>
+    </div>
+  </div>
+  <div class="period">
+    <span>เดือนที่ทำงาน</span>
+    <input type="month" id="periodInput">
+    <span class="be" id="periodBE"></span>
+  </div>
+  <button class="icon-btn" id="themeBtn" title="สลับธีมสว่าง/มืด" aria-label="สลับธีม">◐</button>
+</div>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="entry" aria-selected="true">กรอกเงินเดือน</button>
+  <button role="tab" data-tab="staff" aria-selected="false">พนักงาน</button>
+  <button role="tab" data-tab="dash" aria-selected="false">ภาพรวม</button>
+</nav>
+
+<main>
+  <section id="tab-entry"></section>
+  <section id="tab-staff" hidden></section>
+  <section id="tab-dash" hidden></section>
+</main>
+
+<div id="print-root"></div>
+
+<script>
+"use strict";
+/* ============================ data layer ============================ */
+const KEY="luna_payslip_v1";
+const THAI_MONTHS=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+const RATE_FIELDS=[
+  {key:"otHour",label:"อัตรา OT / ชั่วโมง"},
+  {key:"otDay",label:"อัตรา OT / วัน"},
+  {key:"commPiece",label:"อัตราค่าคอม / ชิ้น"},
+  {key:"absentDay",label:"อัตราหักขาดงาน / วัน"},
+  {key:"lateMin",label:"อัตราหักมาสาย / นาที"},
+  {key:"uniformSet",label:"อัตราหักเบิกชุด / ชุด"},
+];
+
+const TEMPLATES={
+  model:{
+    earn:[
+      {label:"ฐานเงินเดือน",mode:"direct",base:true},
+      {label:"ค่าคอมมิชชั่น",mode:"calc",unit:"ตัว",rateKey:"commPiece"},
+      {label:"OT",mode:"calc",unit:"ชม.",rateKey:"otHour"},
+    ],
+    deduct:[
+      {label:"ขาดงาน",mode:"calc",unit:"วัน",rateKey:"absentDay"},
+      {label:"เบิกชุด",mode:"calc",unit:"ชุด",rateKey:"uniformSet"},
+    ],
+  },
+  admin:{
+    earn:[
+      {label:"ฐานเงินเดือน",mode:"direct",base:true},
+      {label:"หักเบิกเงินล่วงหน้า",mode:"direct"},
+      {label:"OT ชั่วโมง",mode:"calc",unit:"ชม.",rateKey:"otHour"},
+      {label:"OT วัน",mode:"calc",unit:"วัน",rateKey:"otDay"},
+    ],
+    deduct:[
+      {label:"ขาดงาน",mode:"calc",unit:"วัน",rateKey:"absentDay"},
+      {label:"มาสาย",mode:"calc",unit:"นาที",rateKey:"lateMin"},
+      {label:"เบิกชุด",mode:"calc",unit:"ชุด",rateKey:"uniformSet"},
+    ],
+  },
+};
+
+function seed(){
+  const e1=uid(), e2=uid();
+  return {
+    period:"2026-08",
+    employees:[
+      {id:e1,nickname:"โบว์",fullName:"น.ส. พัดดิษา ทิพภัคดี",roleType:"model",baseSalary:30000,
+        bank:"ธนาคารไทยพาณิชย์",accountName:"น.ส. พัดดิษา ทิพภัคดี (โบว์)",accountNumber:"012-823-8069",
+        status:"active",defaults:{otHour:300,commPiece:5,absentDay:1000,uniformSet:0}},
+      {id:e2,nickname:"ตอง",fullName:"น.ส. ชุติมา วัฒนะตระกูล",roleType:"admin",baseSalary:20000,
+        bank:"",accountName:"",accountNumber:"",
+        status:"active",defaults:{otHour:100,otDay:666,absentDay:666,lateMin:0,uniformSet:0}},
+    ],
+    records:{
+      [e1]:{"2026-08":{items:[
+        {id:uid(),section:"earn",label:"ฐานเงินเดือน",mode:"direct",base:true,direct:30000,qty:0,rate:0,unit:""},
+        {id:uid(),section:"earn",label:"ค่าคอมมิชชั่น",mode:"calc",unit:"ตัว",qty:1559,rate:5,direct:0},
+        {id:uid(),section:"earn",label:"OT",mode:"calc",unit:"ชม.",qty:12,rate:300,direct:0},
+        {id:uid(),section:"deduct",label:"ขาดงาน",mode:"calc",unit:"วัน",qty:0,rate:1000,direct:0},
+        {id:uid(),section:"deduct",label:"เบิกชุด",mode:"calc",unit:"ชุด",qty:0,rate:0,direct:0},
+      ],paid:false,updatedAt:Date.now()}},
+      [e2]:{"2026-08":{items:[
+        {id:uid(),section:"earn",label:"ฐานเงินเดือน",mode:"direct",base:true,direct:20000,qty:0,rate:0,unit:""},
+        {id:uid(),section:"earn",label:"หักเบิกเงินล่วงหน้า",mode:"direct",direct:-5000,qty:0,rate:0,unit:""},
+        {id:uid(),section:"earn",label:"OT ชั่วโมง",mode:"calc",unit:"ชม.",qty:0,rate:100,direct:0},
+        {id:uid(),section:"earn",label:"OT วัน",mode:"calc",unit:"วัน",qty:0,rate:666,direct:0},
+        {id:uid(),section:"deduct",label:"ขาดงาน",mode:"calc",unit:"วัน",qty:0,rate:666,direct:0},
+        {id:uid(),section:"deduct",label:"มาสาย",mode:"calc",unit:"นาที",qty:0,rate:0,direct:0},
+        {id:uid(),section:"deduct",label:"เบิกชุด",mode:"calc",unit:"ชุด",qty:0,rate:0,direct:0},
+      ],paid:false,updatedAt:Date.now()}},
+    },
+    log:[{t:Date.now(),m:"เริ่มต้นระบบพร้อมข้อมูลตัวอย่าง"}],
+  };
+}
+
+let S;
+try{ S=JSON.parse(localStorage.getItem(KEY)) || seed(); }catch(e){ S=seed(); }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function logAct(m){ S.log.unshift({t:Date.now(),m}); S.log=S.log.slice(0,60); }
+
+/* ============================ helpers ============================ */
+const nf=new Intl.NumberFormat("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+function money(n){ n=Number(n)||0; if(Math.abs(n)<0.005) return "-"; return (n<0?"(":"")+nf.format(Math.abs(n))+(n<0?")":""); }
+function baht(n){ n=Number(n)||0; if(Math.abs(n)<0.005) return "-"; return (n<0?"(":"")+"฿"+nf.format(Math.abs(n))+(n<0?")":""); }
+function amountOf(it){ return it.mode==="calc" ? (Number(it.qty)||0)*(Number(it.rate)||0) : (Number(it.direct)||0); }
+function periodLabel(p){ const [y,m]=p.split("-"); return THAI_MONTHS[+m-1]+" "+(+y+543); }
+function prevPeriod(p){ const [y,m]=p.split("-").map(Number); const d=new Date(y,m-2,1); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function activeEmps(){ return S.employees.filter(e=>e.status==="active"); }
+function getRec(empId,period,create){
+  S.records[empId]=S.records[empId]||{};
+  let r=S.records[empId][period];
+  if(!r && create){
+    const emp=S.employees.find(e=>e.id===empId);
+    r=buildRec(emp);
+    S.records[empId][period]=r;
+    logAct(`สร้างสลิป ${emp.nickname} · ${periodLabel(period)}`);
+  }
+  return r;
+}
+function buildRec(emp){
+  const items=[];
+  const tpl=TEMPLATES[emp.roleType];
+  ["earn","deduct"].forEach(sec=>tpl[sec].forEach(t=>{
+    items.push({id:uid(),section:sec,label:t.label,mode:t.mode,base:!!t.base,unit:t.unit||"",
+      qty:0, rate:t.rateKey?(Number(emp.defaults?.[t.rateKey])||0):0,
+      direct:t.base?(Number(emp.baseSalary)||0):0});
+  }));
+  return {items,paid:false,updatedAt:Date.now()};
+}
+function totals(rec){
+  let earn=0,ded=0;
+  rec.items.forEach(it=>{ const a=amountOf(it); if(it.section==="earn") earn+=a; else ded+=a; });
+  return {earn,ded,net:earn-ded};
+}
+
+/* ============================ state / nav ============================ */
+let state={tab:"entry", selEmp:null, dashPeriod:S.period};
+let resetArmed=false;
+
+let _toastT;
+function toast(msg){
+  let el=document.getElementById("toast");
+  if(!el){ el=document.createElement("div"); el.id="toast"; el.className="toast"; document.body.appendChild(el); }
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove("show"),2600);
+}
+
+function addItemUI(sec,label,locked){
+  return `<div>
+    <button class="btn ghost sm" data-addtoggle="${sec}" ${locked?"disabled":""}>+ เพิ่มรายการ${label}</button>
+    <div class="addform" id="addform-${sec}" hidden>
+      <input type="text" data-af="label" placeholder="ชื่อรายการ${label}">
+      <select data-af="mode">
+        <option value="calc">คำนวณ: จำนวน × อัตรา</option>
+        <option value="direct">กรอกยอดตรง</option>
+      </select>
+      <button class="btn primary sm" data-afadd="${sec}">เพิ่ม</button>
+      <button class="btn ghost sm" data-afcancel="${sec}">ยกเลิก</button>
+    </div>
+  </div>`;
+}
+
+/* self-contained stylesheet for the print window (no CSS variables) */
+const PRINT_CSS=`
+*{box-sizing:border-box;margin:0}
+body{background:#eee;font-family:"Sarabun",sans-serif;color:#2c2521;padding:20px}
+.page{max-width:150mm;margin:0 auto 20px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.sheet{background:#fff;color:#2c2521;font-family:"Sarabun",sans-serif}
+.sheet .hd{background:linear-gradient(107deg,#fbe8dc,#f6d3bf 52%,#e9b79b);padding:20px 22px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.sheet .hd .b{display:flex;align-items:center;gap:9px;font-family:"Prompt";font-weight:600;font-size:17px;color:#7a3f22}
+.sheet .hd .b svg{width:20px;height:20px;color:#e07a4f}
+.sheet .hd .m{text-align:right;font-size:12px;color:#8a5636;line-height:1.4}
+.sheet .hd .m strong{display:block;font-family:"Prompt";font-weight:600;font-size:15px;color:#6d3c20}
+.sheet .body{padding:20px 22px 24px}
+.namecard{background:linear-gradient(100deg,#e88a5f,#df7248);border-radius:10px;padding:13px 16px;color:#fff}
+.namecard .nn{font-size:11px;letter-spacing:.06em;opacity:.85;font-family:"Prompt"}
+.namecard .fn{font-family:"Prompt";font-weight:600;font-size:16px;margin-top:1px}
+.slab{font-family:"Prompt";font-weight:600;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#b96a45;margin:18px 0 4px}
+.srow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #ece3d6;font-size:13.5px}
+.srow .l{color:#3f3730}
+.srow .l small{display:block;color:#a08b78;font-size:11px;font-family:"IBM Plex Mono",monospace}
+.srow .v{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color:#2c2521}
+.srow .v.neg{color:#c23b2e}
+.srow.sum{border-bottom:0;border-top:1.5px solid #d8ccbb;margin-top:2px;font-family:"Prompt";font-weight:600;font-size:14px}
+.netbox{background:#38302a;color:#fff;border-radius:10px;padding:15px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center}
+.netbox .l{font-family:"Prompt";font-weight:500;font-size:13px}
+.netbox .v{font-family:"Prompt";font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.netbox.bad{background:#7c2b22}
+.bankbox{margin-top:14px;background:#faf3ee;border:1px solid #eaddce;border-radius:10px;padding:12px 15px;font-size:12.5px}
+.bankbox .t{font-family:"Prompt";font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#b96a45;margin-bottom:5px}
+.bankbox .line{color:#4a4038}
+.bankbox .none{color:#a08b78;font-style:italic}
+.slipwarn{margin-top:14px;display:flex;gap:7px;align-items:flex-start;font-size:11.5px;color:#9a4d38;line-height:1.4}
+.slipwarn svg{width:14px;height:14px;flex:none;margin-top:1px}
+.sheet .ft{text-align:center;font-size:10px;color:#b0a08e;padding:10px;border-top:1px solid #f0e7da;font-family:"IBM Plex Mono",monospace}
+.bar{position:sticky;top:0;background:#2c2521;color:#fff;padding:12px 18px;margin:-20px -20px 20px;font-family:"Prompt";font-size:13px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.bar button{font-family:"Prompt";font-size:13px;font-weight:600;background:#e07a4f;color:#fff;border:0;border-radius:8px;padding:8px 16px;cursor:pointer}
+@media print{
+  body{background:#fff;padding:0}
+  .bar{display:none}
+  .page{max-width:none;margin:0;border-radius:0;box-shadow:none;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+  @page{size:A4;margin:12mm}
+}`;
+
+function buildPrintDoc(pairs){
+  const slips=pairs.map(([e,r])=>`<div class="page">${slipHTML(e,r)}</div>`).join("");
+  return `<!doctype html><html lang="th"><head><meta charset="utf-8">
+<title>สลิปเงินเดือน ${periodLabel(S.period)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>${PRINT_CSS}</style></head><body>
+<div class="bar"><span>สลิป ${pairs.length} ใบ · ${periodLabel(S.period)}</span>
+<button onclick="window.print()">🖨 สั่งพิมพ์ / บันทึกเป็น PDF</button>
+<span style="opacity:.7">ในกล่องพิมพ์ เลือกปลายทาง “Save as PDF” · กระดาษ A4</span></div>
+${slips}
+<script>window.addEventListener("load",function(){setTimeout(function(){try{window.print()}catch(e){}},600)})<\/script>
+</body></html>`;
+}
+
+function openPrintView(pairs){
+  const html=pairs.map(([e,r])=>slipHTML(e,r)).join("");
+  document.getElementById("print-root").innerHTML=html;
+
+  const ov=document.createElement("div");
+  ov.className="printview"; ov.id="printview";
+  ov.innerHTML=`<div class="pv-bar">
+      <button class="btn primary sm" id="pv-print">🖨 สั่งพิมพ์ / บันทึกเป็น PDF (${pairs.length} ใบ)</button>
+      <button class="btn sm" id="pv-close">ปิด</button>
+    </div>
+    <div class="faint" style="max-width:640px;margin:0 auto 14px;line-height:1.6">
+      ในกล่องพิมพ์ที่เด้งขึ้นมา เลือกปลายทาง <b>“บันทึกเป็น PDF / Save as PDF”</b> · กระดาษ A4 หรือ A5<br>
+      <b>ถ้ากดแล้วไม่มีกล่องพิมพ์เด้ง</b> = กำลังเปิดจากลิงก์ออนไลน์ (Artifact) ซึ่งบล็อกการสั่งพิมพ์ —
+      ดาวน์โหลดไฟล์ <b>luna-payslip.html</b> เก็บในเครื่อง แล้วดับเบิลคลิกเปิดด้วย Chrome/Edge จากนั้นกดปุ่มนี้อีกครั้ง
+    </div>
+    <div class="pv-slips">${html}</div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("#pv-close").addEventListener("click",()=>ov.remove());
+  const go=()=>{ try{ window.print(); }catch(e){ toast("เบราว์เซอร์นี้บล็อกการพิมพ์ — เปิดไฟล์จากในเครื่องแทน"); } };
+  ov.querySelector("#pv-print").addEventListener("click",go);
+  setTimeout(go,350);
+}
+document.getElementById("periodInput").value=S.period;
+document.getElementById("periodBE").textContent="พ.ศ. "+(+S.period.split("-")[0]+543);
+
+document.getElementById("periodInput").addEventListener("change",e=>{
+  S.period=e.target.value||S.period;
+  document.getElementById("periodBE").textContent="พ.ศ. "+(+S.period.split("-")[0]+543);
+  state.dashPeriod=S.period; save(); render();
+});
+document.getElementById("themeBtn").addEventListener("click",()=>{
+  const cur=document.documentElement.getAttribute("data-theme");
+  const next=cur==="dark"?"light":cur==="light"?"dark":(matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark");
+  document.documentElement.setAttribute("data-theme",next);
+  try{localStorage.setItem(KEY+"_theme",next)}catch(e){}
+});
+try{const t=localStorage.getItem(KEY+"_theme"); if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  state.tab=b.dataset.tab; render();
+}));
+
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===state.tab));
+  ["entry","staff","dash"].forEach(t=>document.getElementById("tab-"+t).hidden=(t!==state.tab));
+  if(state.tab==="entry") renderEntry();
+  if(state.tab==="staff") renderStaff();
+  if(state.tab==="dash") renderDash();
+}
+
+/* ============================ ENTRY ============================ */
+function renderEntry(){
+  const host=document.getElementById("tab-entry");
+  const emps=activeEmps();
+  if(!emps.length){ host.innerHTML=`<div class="card"><div class="empty">ยังไม่มีพนักงานที่ทำงานอยู่ — ไปที่แท็บ “พนักงาน” เพื่อเพิ่มคนก่อน</div></div>`; return; }
+  if(!state.selEmp || !emps.find(e=>e.id===state.selEmp)) state.selEmp=emps[0].id;
+  const emp=S.employees.find(e=>e.id===state.selEmp);
+  const rec=getRec(emp.id,S.period,true);
+  const t=totals(rec);
+  const bad=t.net<0;
+
+  host.innerHTML=`
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="spread" style="margin-bottom:14px">
+          <label class="field" style="flex:1;max-width:280px">
+            <span>เลือกพนักงาน</span>
+            <select id="selEmp">${emps.map(e=>`<option value="${e.id}" ${e.id===emp.id?"selected":""}>${esc(e.nickname)} — ${esc(e.fullName)}</option>`).join("")}</select>
+          </label>
+          <span class="pill ${emp.roleType}">${emp.roleType==="model"?"นางแบบ":"แอดมิน/แบ็คออฟฟิศ"}</span>
+        </div>
+        <div class="row" style="margin-bottom:4px">
+          <button class="btn sm" id="copyPrev">↤ คัดลอกจากเดือนก่อนหน้า (${periodLabel(prevPeriod(S.period))})</button>
+          <button class="btn sm ${resetArmed?"danger":""}" id="resetRec">${resetArmed?"ยืนยันรีเซ็ต ↺":"รีเซ็ตเป็นเทมเพลต"}</button>
+          <label class="row" style="gap:6px;font-size:13px;margin-left:auto">
+            <input type="checkbox" id="paidChk" ${rec.paid?"checked":""} style="width:auto">
+            <span class="pill paid" style="${rec.paid?"":"display:none"}">จ่ายแล้ว · ล็อก</span>
+            <span style="${rec.paid?"display:none":""}">ทำเครื่องหมาย “จ่ายแล้ว”</span>
+          </label>
+        </div>
+        ${rec.paid?`<div class="warn">🔒 สลิปนี้ถูกล็อกเพราะจ่ายแล้ว — เอาเครื่องหมาย “จ่ายแล้ว” ออกก่อนจึงจะแก้ไขได้</div>`:""}
+
+        <div class="section-label">รายรับ (Earnings)</div>
+        ${itemsBlock(rec,"earn",rec.paid)}
+        ${addItemUI("earn","รายรับ",rec.paid)}
+
+        <div class="section-label">รายการหัก (Deductions)</div>
+        ${itemsBlock(rec,"deduct",rec.paid)}
+        ${addItemUI("deduct","หัก",rec.paid)}
+
+        <div class="totals">
+          <div class="t"><span>รวมรายรับ</span><span class="mono">${baht(t.earn)}</span></div>
+          <div class="t"><span>รวมรายการหัก</span><span class="mono" style="color:var(--neg)">${t.ded>0?"− ":""}${baht(t.ded)}</span></div>
+          <div class="t net ${bad?"bad":""}"><span>คงเหลือยอดโอน</span><span class="mono">${baht(t.net)}</span></div>
+        </div>
+        ${bad?`<div class="warn">⚠️ ยอดโอนสุทธิติดลบ (${baht(t.net)}) — ตรวจทานรายการหักก่อนแจ้งจ่าย</div>`:""}
+        <div class="faint" style="margin-top:12px">แก้ไขล่าสุด ${new Date(rec.updatedAt).toLocaleString("th-TH")}</div>
+      </div>
+
+      <div class="card" id="monthTableCard">
+        <h3>ทั้งเดือน · ${esc(periodLabel(S.period))}</h3>
+        <table class="list" style="margin-top:10px">
+          <thead><tr><th>พนักงาน</th><th>ประเภท</th><th style="text-align:right">รายรับ</th><th style="text-align:right">หัก</th><th style="text-align:right">ยอดโอน</th><th></th></tr></thead>
+          <tbody>${emps.map(e=>{
+            const r=getRec(e.id,S.period,true); const tt=totals(r);
+            return `<tr data-jump="${e.id}" style="cursor:pointer">
+              <td class="tag-name">${esc(e.nickname)} ${r.paid?'<span class="pill paid">จ่ายแล้ว</span>':""}</td>
+              <td><span class="pill ${e.roleType}">${e.roleType==="model"?"นางแบบ":"แอดมิน"}</span></td>
+              <td class="mono" style="text-align:right">${money(tt.earn)}</td>
+              <td class="mono" style="text-align:right;color:var(--neg)">${tt.ded>0?money(-tt.ded):"-"}</td>
+              <td class="mono" style="text-align:right;font-weight:600;color:${tt.net<0?"var(--neg)":"var(--pos)"}">${money(tt.net)}</td>
+              <td style="text-align:right">→</td></tr>`;
+          }).join("")}</tbody>
+        </table>
+        <div class="row" style="margin-top:14px">
+          <button class="btn sm" id="printOne">บันทึก PDF — คนนี้</button>
+          <button class="btn primary sm" id="printAll">บันทึก PDF ทั้งเดือน (${emps.length} คน)</button>
+        </div>
+        <div class="addnote">จะเปิดหน้าสลิปในแท็บใหม่ (คนละหน้า) แล้วเด้งกล่องพิมพ์ให้เอง — เลือกปลายทาง “Save as PDF” กระดาษ A4 · ถ้าแท็บใหม่ถูกบล็อก ให้อนุญาต pop-up ของเว็บนี้</div>
+      </div>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="cap">ตัวอย่างสลิป</div>
+      <div id="previewSlot">${slipHTML(emp,rec)}</div>
+    </div>
+  </div>`;
+
+  // wiring
+  host.querySelector("#selEmp").addEventListener("change",e=>{state.selEmp=e.target.value;renderEntry();});
+  host.querySelector("#paidChk").addEventListener("change",e=>{
+    rec.paid=e.target.checked; rec.updatedAt=Date.now();
+    logAct(`${rec.paid?"ล็อก(จ่ายแล้ว)":"ปลดล็อก"}สลิป ${emp.nickname} · ${periodLabel(S.period)}`);
+    save(); renderEntry();
+  });
+  host.querySelector("#copyPrev").addEventListener("click",()=>{
+    if(rec.paid) return;
+    const prev=S.records[emp.id]?.[prevPeriod(S.period)];
+    if(!prev){ toast("ไม่พบสลิปของเดือน "+periodLabel(prevPeriod(S.period))); return; }
+    rec.items=prev.items.map(it=>({...it,id:uid(),qty:0,direct:it.base?it.direct:(it.mode==="direct"?0:it.direct)}));
+    rec.updatedAt=Date.now(); logAct(`คัดลอกจากเดือนก่อนหน้า → ${emp.nickname}`); save(); renderEntry();
+  });
+  host.querySelector("#resetRec").addEventListener("click",()=>{
+    if(rec.paid) return;
+    if(!resetArmed){ resetArmed=true; renderEntry(); setTimeout(()=>{resetArmed=false;},4000); return; }
+    resetArmed=false;
+    const fresh=buildRec(emp); rec.items=fresh.items; rec.updatedAt=Date.now();
+    logAct(`รีเซ็ตสลิปเป็นเทมเพลต → ${emp.nickname}`); save(); renderEntry(); toast("รีเซ็ตกลับเป็นเทมเพลตแล้ว");
+  });
+  host.querySelectorAll("[data-addtoggle]").forEach(b=>b.addEventListener("click",()=>{
+    if(rec.paid) return;
+    const f=host.querySelector("#addform-"+b.dataset.addtoggle);
+    f.hidden=!f.hidden; if(!f.hidden) f.querySelector("input").focus();
+  }));
+  host.querySelectorAll("[data-afcancel]").forEach(b=>b.addEventListener("click",()=>{
+    host.querySelector("#addform-"+b.dataset.afcancel).hidden=true;
+  }));
+  host.querySelectorAll("[data-afadd]").forEach(b=>b.addEventListener("click",()=>{
+    if(rec.paid) return;
+    const sec=b.dataset.afadd, f=host.querySelector("#addform-"+sec);
+    const label=f.querySelector('[data-af="label"]').value.trim();
+    const mode=f.querySelector('[data-af="mode"]').value;
+    if(!label){ toast("กรุณาใส่ชื่อรายการ"); return; }
+    rec.items.push({id:uid(),section:sec,label,mode,unit:mode==="calc"?"หน่วย":"",qty:0,rate:0,direct:0});
+    rec.updatedAt=Date.now(); save(); renderEntry();
+    toast(`เพิ่ม “${label}” แล้ว`);
+  }));
+  host.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{
+    if(rec.paid) return;
+    rec.items=rec.items.filter(it=>it.id!==b.dataset.del); rec.updatedAt=Date.now(); save(); renderEntry();
+  }));
+  host.querySelectorAll("[data-f]").forEach(inp=>inp.addEventListener("input",()=>{
+    const it=rec.items.find(x=>x.id===inp.dataset.id); if(!it) return;
+    const f=inp.dataset.f;
+    it[f]= f==="label"||f==="unit" ? inp.value : (parseFloat(inp.value)||0);
+    rec.updatedAt=Date.now(); save(); patchEntry(emp,rec);
+  }));
+  host.querySelectorAll("[data-jump]").forEach(tr=>tr.addEventListener("click",()=>{
+    state.selEmp=tr.dataset.jump; renderEntry(); window.scrollTo({top:0,behavior:"smooth"});
+  }));
+  host.querySelector("#printOne").addEventListener("click",()=>openPrintView([[emp,rec]]));
+  host.querySelector("#printAll").addEventListener("click",()=>{
+    openPrintView(emps.map(e=>[e,getRec(e.id,S.period,true)]));
+  });
+}
+
+function itemsBlock(rec,sec,locked){
+  const rows=rec.items.filter(it=>it.section===sec);
+  if(!rows.length) return `<div class="faint" style="padding:6px 0">— ไม่มีรายการ —</div>`;
+  return `<div class="li-head li">${["รายการ","จำนวน","หน่วย","อัตรา (บาท)","ยอด","" ].map(h=>`<span>${h}</span>`).join("")}</div>`+
+  rows.map(it=>{
+    const a=amountOf(it);
+    const calc=it.mode==="calc";
+    return `<div class="li">
+      <input type="text" data-id="${it.id}" data-f="label" value="${esc(it.label)}" ${locked?"disabled":""}>
+      ${calc
+        ? `<input type="number" step="0.01" data-id="${it.id}" data-f="qty" value="${it.qty||""}" ${locked?"disabled":""} placeholder="0">
+           <input type="text" data-id="${it.id}" data-f="unit" class="unit" value="${esc(it.unit||"")}" ${locked?"disabled":""}>
+           <input type="number" step="0.01" data-id="${it.id}" data-f="rate" value="${it.rate||""}" ${locked?"disabled":""} placeholder="0">`
+        : `<span class="unit" style="grid-column:span 2">กรอกยอดตรง →</span>
+           <input type="number" step="0.01" data-id="${it.id}" data-f="direct" value="${it.direct||""}" ${locked?"disabled":""} placeholder="0">`}
+      <span class="amt ${a<0?"neg":""}" data-amt="${it.id}">${money(a)}</span>
+      ${it.base||locked?`<span></span>`:`<button class="x" data-del="${it.id}" title="ลบรายการ">×</button>`}
+    </div>`;
+  }).join("");
+}
+
+function patchEntry(emp,rec){
+  rec.items.forEach(it=>{
+    const el=document.querySelector(`[data-amt="${it.id}"]`);
+    if(el){ const a=amountOf(it); el.textContent=money(a); el.classList.toggle("neg",a<0); }
+  });
+  const t=totals(rec), bad=t.net<0;
+  const tot=document.querySelector("#tab-entry .totals");
+  if(tot){
+    tot.innerHTML=`
+      <div class="t"><span>รวมรายรับ</span><span class="mono">${baht(t.earn)}</span></div>
+      <div class="t"><span>รวมรายการหัก</span><span class="mono" style="color:var(--neg)">${t.ded>0?"− ":""}${baht(t.ded)}</span></div>
+      <div class="t net ${bad?"bad":""}"><span>คงเหลือยอดโอน</span><span class="mono">${baht(t.net)}</span></div>`;
+    let w=tot.parentElement.querySelector(".warn");
+    if(bad && !w){ w=document.createElement("div"); w.className="warn"; tot.after(w); }
+    if(!bad && w){ w.remove(); }
+    if(bad && w){ w.innerHTML=`⚠️ ยอดโอนสุทธิติดลบ (${baht(t.net)}) — ตรวจทานรายการหักก่อนแจ้งจ่าย`; }
+  }
+  document.getElementById("previewSlot").innerHTML=slipHTML(emp,rec);
+}
+
+/* ============================ SLIP ============================ */
+function slipRow(it){
+  const a=amountOf(it);
+  const sub=it.mode==="calc" && (it.qty||it.rate) ? `<small>${(+it.qty||0).toLocaleString("th-TH")} ${esc(it.unit||"")} × ${nf.format(+it.rate||0)}</small>` : "";
+  return `<div class="srow"><span class="l">${esc(it.label)}${sub}</span><span class="v ${a<0?"neg":""}">${money(a)}</span></div>`;
+}
+function slipHTML(emp,rec){
+  const t=totals(rec), bad=t.net<0;
+  const earn=rec.items.filter(i=>i.section==="earn");
+  const ded=rec.items.filter(i=>i.section==="deduct");
+  const hasBank=emp.accountNumber||emp.bank||emp.accountName;
+  return `<div class="sheet">
+    <div class="hd">
+      <span class="b"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 2.5a9.5 9.5 0 1 0 6 16.9A7.5 7.5 0 0 1 15.5 2.5z" fill="currentColor"/></svg> LUNA Brand</span>
+      <span class="m">สลิปเงินเดือน<strong>${esc(periodLabel(S.period))}</strong></span>
+    </div>
+    <div class="body">
+      <div class="namecard">
+        <div class="nn">${esc(emp.nickname||"")}</div>
+        <div class="fn">${esc(emp.fullName||emp.nickname||"—")}</div>
+      </div>
+
+      <div class="slab">รายรับ</div>
+      ${earn.map(slipRow).join("")}
+      <div class="srow sum"><span class="l">รวมรายรับ</span><span class="v">฿${nf.format(t.earn)}</span></div>
+
+      <div class="slab">รายการหัก</div>
+      ${ded.length?ded.map(slipRow).join(""):`<div class="srow"><span class="l">— ไม่มีรายการหัก —</span><span class="v">-</span></div>`}
+      <div class="srow sum"><span class="l">รวมรายการหัก</span><span class="v ${t.ded>0?"neg":""}">${t.ded>0?money(-t.ded):"-"}</span></div>
+
+      <div class="netbox ${bad?"bad":""}">
+        <span class="l">คงเหลือยอดโอน</span>
+        <span class="v">฿${nf.format(t.net)}</span>
+      </div>
+
+      <div class="bankbox">
+        <div class="t">ข้อมูลการโอนเงิน</div>
+        ${hasBank
+          ? `<div class="line">${esc(emp.bank||"—")}</div>
+             <div class="line">${esc(emp.accountName||emp.fullName||"")}</div>
+             <div class="line">${emp.accountNumber?esc(emp.accountNumber):'<span class="none">ยังไม่ได้บันทึกเลขบัญชี</span>'}</div>`
+          : `<div class="none">ยังไม่ได้บันทึกข้อมูลบัญชี</div>`}
+      </div>
+
+      <div class="slipwarn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        เงินเดือนถือเป็นความลับส่วนบุคคล ห้ามมิให้บอก หรือถามผู้อื่นโดยเด็ดขาด
+      </div>
+    </div>
+    <div class="ft">LUNA Brand · payslip · ${esc(periodLabel(S.period))}${rec.paid?" · จ่ายแล้ว":""}</div>
+  </div>`;
+}
+
+
+/* ============================ STAFF ============================ */
+function renderStaff(){
+  const host=document.getElementById("tab-staff");
+  host.innerHTML=`
+    <div class="card">
+      <div class="spread"><h3>พนักงานทั้งหมด (${S.employees.length})</h3>
+        <button class="btn primary sm" id="addEmp">+ เพิ่มพนักงาน</button></div>
+      <table class="list" style="margin-top:12px">
+        <thead><tr><th>ชื่อเล่น</th><th>ชื่อ-นามสกุล</th><th>ประเภท</th><th style="text-align:right">ฐานเงินเดือน</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody>${S.employees.map(e=>`
+          <tr>
+            <td class="tag-name">${esc(e.nickname)}</td>
+            <td>${esc(e.fullName)}</td>
+            <td><span class="pill ${e.roleType}">${e.roleType==="model"?"นางแบบ":"แอดมิน"}</span></td>
+            <td class="mono" style="text-align:right">${nf.format(e.baseSalary||0)}</td>
+            <td>${e.status==="active"?'ทำงานอยู่':'<span class="pill resigned">ลาออกแล้ว</span>'}</td>
+            <td style="text-align:right;white-space:nowrap">
+              <button class="btn sm" data-edit="${e.id}">แก้ไข</button>
+              <button class="btn sm" data-toggle="${e.id}">${e.status==="active"?"ทำเป็นลาออก":"กลับมาทำงาน"}</button>
+            </td>
+          </tr>`).join("")}</tbody>
+      </table>
+    </div>
+    <div class="card" id="empFormCard" hidden></div>`;
+  host.querySelector("#addEmp").addEventListener("click",()=>empForm(null));
+  host.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>empForm(b.dataset.edit)));
+  host.querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click",()=>{
+    const e=S.employees.find(x=>x.id===b.dataset.toggle);
+    e.status=e.status==="active"?"resigned":"active";
+    logAct(`เปลี่ยนสถานะ ${e.nickname} → ${e.status==="active"?"ทำงานอยู่":"ลาออกแล้ว"}`);
+    save(); renderStaff();
+  }));
+}
+
+function empForm(id){
+  const e=id?S.employees.find(x=>x.id===id):{id:uid(),nickname:"",fullName:"",roleType:"admin",baseSalary:0,bank:"",accountName:"",accountNumber:"",status:"active",defaults:{}};
+  const card=document.getElementById("empFormCard");
+  card.hidden=false;
+  card.innerHTML=`
+    <h3>${id?"แก้ไขพนักงาน":"เพิ่มพนักงานใหม่"}</h3>
+    <div class="row" style="margin-top:12px;align-items:flex-start">
+      <label class="field" style="flex:1;min-width:130px"><span>ชื่อเล่น</span><input type="text" id="f_nick" value="${esc(e.nickname)}"></label>
+      <label class="field" style="flex:2;min-width:200px"><span>ชื่อ-นามสกุลจริง</span><input type="text" id="f_full" value="${esc(e.fullName)}"></label>
+    </div>
+    <div class="row" style="margin-top:10px;align-items:flex-start">
+      <label class="field" style="flex:1;min-width:160px"><span>ประเภทพนักงาน (เทมเพลตคำนวณ)</span>
+        <select id="f_role"><option value="model" ${e.roleType==="model"?"selected":""}>นางแบบ — ฐาน + ค่าคอมมิชชั่น</option>
+        <option value="admin" ${e.roleType==="admin"?"selected":""}>แอดมิน/แบ็คออฟฟิศ — ฐาน + OT</option></select></label>
+      <label class="field" style="flex:1;min-width:140px"><span>ฐานเงินเดือน (บาท)</span><input type="number" id="f_base" value="${e.baseSalary||""}"></label>
+    </div>
+    <div class="section-label">ข้อมูลการโอนเงิน (เว้นว่างได้)</div>
+    <div class="row" style="align-items:flex-start">
+      <label class="field" style="flex:1;min-width:150px"><span>ธนาคาร</span><input type="text" id="f_bank" value="${esc(e.bank)}"></label>
+      <label class="field" style="flex:1;min-width:150px"><span>ชื่อบัญชี</span><input type="text" id="f_accn" value="${esc(e.accountName)}"></label>
+      <label class="field" style="flex:1;min-width:150px"><span>เลขบัญชี</span><input type="text" id="f_accno" value="${esc(e.accountNumber)}"></label>
+    </div>
+    <div class="section-label">อัตราตั้งต้น (ใช้เป็นค่าเริ่มต้นตอนสร้างสลิปเดือนใหม่ · แก้รายเดือนได้)</div>
+    <div class="row" style="align-items:flex-start">
+      ${RATE_FIELDS.map(r=>`<label class="field" style="flex:1;min-width:135px"><span>${r.label}</span>
+        <input type="number" id="rf_${r.key}" value="${e.defaults?.[r.key]||""}"></label>`).join("")}
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn primary sm" id="f_save">บันทึก</button>
+      <button class="btn ghost sm" id="f_cancel">ยกเลิก</button>
+    </div>`;
+  card.querySelector("#f_cancel").addEventListener("click",()=>{card.hidden=true;});
+  card.querySelector("#f_save").addEventListener("click",()=>{
+    e.nickname=card.querySelector("#f_nick").value.trim();
+    e.fullName=card.querySelector("#f_full").value.trim();
+    e.roleType=card.querySelector("#f_role").value;
+    e.baseSalary=parseFloat(card.querySelector("#f_base").value)||0;
+    e.bank=card.querySelector("#f_bank").value.trim();
+    e.accountName=card.querySelector("#f_accn").value.trim();
+    e.accountNumber=card.querySelector("#f_accno").value.trim();
+    e.defaults=e.defaults||{};
+    RATE_FIELDS.forEach(r=>e.defaults[r.key]=parseFloat(card.querySelector("#rf_"+r.key).value)||0);
+    if(!e.nickname){ toast("กรุณากรอกชื่อเล่น"); return; }
+    if(!id){ S.employees.push(e); logAct(`เพิ่มพนักงาน ${e.nickname}`); }
+    else logAct(`แก้ไขข้อมูลพนักงาน ${e.nickname}`);
+    save(); renderStaff();
+  });
+}
+
+/* ============================ DASHBOARD ============================ */
+function renderDash(){
+  const host=document.getElementById("tab-dash");
+  const p=state.dashPeriod;
+  const emps=S.employees.filter(e=>S.records[e.id]?.[p]);
+  const rows=emps.map(e=>({e,r:S.records[e.id][p],t:totals(S.records[e.id][p])}));
+  const sum=k=>rows.reduce((a,x)=>a+x.t[k],0);
+  const byRole=rt=>rows.filter(x=>x.e.roleType===rt);
+
+  host.innerHTML=`
+    <div class="card">
+      <div class="spread">
+        <h3>ภาพรวมค่าใช้จ่ายพนักงาน · ${esc(periodLabel(p))}</h3>
+        <label class="field" style="max-width:190px"><span>เดือน</span>
+          <input type="month" id="dashP" value="${p}"></label>
+      </div>
+      ${rows.length?`
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi"><div class="k">จำนวนสลิป</div><div class="v">${rows.length}</div></div>
+        <div class="kpi"><div class="k">รวมรายรับ</div><div class="v mono">฿${nf.format(sum("earn"))}</div></div>
+        <div class="kpi"><div class="k">รวมรายการหัก</div><div class="v mono" style="color:var(--neg)">฿${nf.format(sum("ded"))}</div></div>
+        <div class="kpi"><div class="k">รวมยอดโอนสุทธิ</div><div class="v mono" style="color:var(--pos)">฿${nf.format(sum("net"))}</div></div>
+      </div>
+      <div class="row" style="margin-top:16px;gap:24px">
+        ${[["model","นางแบบ"],["admin","แอดมิน/แบ็คออฟฟิศ"]].map(([rt,lb])=>{
+          const g=byRole(rt); const n=g.reduce((a,x)=>a+x.t.net,0);
+          return `<div><span class="pill ${rt}">${lb}</span> <span class="faint">${g.length} คน</span>
+            <div class="mono" style="font-family:'Prompt';font-weight:600;font-size:18px">฿${nf.format(n)}</div></div>`;
+        }).join("")}
+      </div>
+      <table class="list" style="margin-top:18px">
+        <thead><tr><th>พนักงาน</th><th>ประเภท</th><th style="text-align:right">รายรับ</th><th style="text-align:right">หัก</th><th style="text-align:right">ยอดโอน</th><th>สถานะ</th></tr></thead>
+        <tbody>${rows.map(x=>`<tr>
+          <td class="tag-name">${esc(x.e.nickname)}</td>
+          <td><span class="pill ${x.e.roleType}">${x.e.roleType==="model"?"นางแบบ":"แอดมิน"}</span></td>
+          <td class="mono" style="text-align:right">${money(x.t.earn)}</td>
+          <td class="mono" style="text-align:right;color:var(--neg)">${x.t.ded>0?money(-x.t.ded):"-"}</td>
+          <td class="mono" style="text-align:right;font-weight:600;color:${x.t.net<0?"var(--neg)":"var(--pos)"}">${money(x.t.net)}</td>
+          <td>${x.r.paid?'<span class="pill paid">จ่ายแล้ว</span>':'<span class="faint">ร่าง</span>'}</td>
+        </tr>`).join("")}</tbody>
+      </table>`
+      :`<div class="empty">ยังไม่มีสลิปในเดือน ${esc(periodLabel(p))}</div>`}
+    </div>
+
+    <div class="card">
+      <h3>บันทึกกิจกรรม (Audit trail)</h3>
+      <div style="margin-top:10px;display:grid;gap:6px;font-size:13px">
+        ${S.log.slice(0,25).map(l=>`<div class="row" style="gap:10px">
+          <span class="faint mono" style="min-width:132px">${new Date(l.t).toLocaleString("th-TH")}</span>
+          <span>${esc(l.m)}</span></div>`).join("")}
+      </div>
+    </div>`;
+  host.querySelector("#dashP").addEventListener("change",e=>{state.dashPeriod=e.target.value;renderDash();});
+}
+
+window.addEventListener("afterprint",()=>{ document.getElementById("print-root").innerHTML=""; });
+render();
+</script>
