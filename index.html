@@ -228,12 +228,12 @@ table.list tbody tr:hover{background:var(--surface-2)}
 /* ---------- print ---------- */
 #print-root{display:none}
 @media print{
-  body{background:#fff}
-  .topbar,.tabs,main,.printview,.toast{display:none!important}
-  #print-root{display:block}
-  .sheet{box-shadow:none;border-radius:0;border:1px solid #ddd;page-break-after:always;margin:0 auto;max-width:148mm}
-  .sheet:last-child{page-break-after:auto}
-  @page{size:A5;margin:8mm}
+  html,body{background:#fff!important;margin:0}
+  body>*{display:none!important}
+  #print-root{display:block!important}
+  .sheet{box-shadow:none;border-radius:0;border:1px solid #ddd;page-break-after:always;break-after:page;margin:0 auto;max-width:100%}
+  .sheet:last-child{page-break-after:auto;break-after:auto}
+  @page{margin:10mm}
 }
 </style>
 
@@ -470,27 +470,14 @@ ${slips}
 </body></html>`;
 }
 
-function openPrintView(pairs){
-  const html=pairs.map(([e,r])=>slipHTML(e,r)).join("");
-  document.getElementById("print-root").innerHTML=html;
-
-  const ov=document.createElement("div");
-  ov.className="printview"; ov.id="printview";
-  ov.innerHTML=`<div class="pv-bar">
-      <button class="btn primary sm" id="pv-print">🖨 สั่งพิมพ์ / บันทึกเป็น PDF (${pairs.length} ใบ)</button>
-      <button class="btn sm" id="pv-close">ปิด</button>
-    </div>
-    <div class="faint" style="max-width:640px;margin:0 auto 14px;line-height:1.6">
-      ในกล่องพิมพ์ที่เด้งขึ้นมา เลือกปลายทาง <b>“บันทึกเป็น PDF / Save as PDF”</b> · กระดาษ A4 หรือ A5<br>
-      <b>ถ้ากดแล้วไม่มีกล่องพิมพ์เด้ง</b> = กำลังเปิดจากลิงก์ออนไลน์ (Artifact) ซึ่งบล็อกการสั่งพิมพ์ —
-      ดาวน์โหลดไฟล์ <b>luna-payslip.html</b> เก็บในเครื่อง แล้วดับเบิลคลิกเปิดด้วย Chrome/Edge จากนั้นกดปุ่มนี้อีกครั้ง
-    </div>
-    <div class="pv-slips">${html}</div>`;
-  document.body.appendChild(ov);
-  ov.querySelector("#pv-close").addEventListener("click",()=>ov.remove());
-  const go=()=>{ try{ window.print(); }catch(e){ toast("เบราว์เซอร์นี้บล็อกการพิมพ์ — เปิดไฟล์จากในเครื่องแทน"); } };
-  ov.querySelector("#pv-print").addEventListener("click",go);
-  setTimeout(go,350);
+/* วางสลิปลงพื้นที่พิมพ์ แล้วเปิดกล่องพิมพ์ของเบราว์เซอร์
+   (ในกล่องนั้น: เลือก "บันทึกเป็น PDF" = ได้ไฟล์ / เลือกเครื่องพิมพ์ = พิมพ์กระดาษ) */
+function printSlips(pairs){
+  const root=document.getElementById("print-root");
+  if(!root){ toast("ไม่พบพื้นที่พิมพ์"); return; }
+  if(!pairs.length){ toast("ไม่มีสลิปให้พิมพ์"); return; }
+  root.innerHTML=pairs.map(([e,r])=>slipHTML(e,r)).join("");
+  setTimeout(()=>{ try{ window.print(); }catch(e){ toast("เบราว์เซอร์บล็อกการพิมพ์ — ลองกด Ctrl/⌘ + P"); } }, 250);
 }
 document.getElementById("periodInput").value=S.period;
 document.getElementById("periodBE").textContent="พ.ศ. "+(+S.period.split("-")[0]+543);
@@ -586,10 +573,12 @@ function renderEntry(){
           }).join("")}</tbody>
         </table>
         <div class="row" style="margin-top:14px">
-          <button class="btn sm" id="printOne">บันทึก PDF — คนนี้</button>
-          <button class="btn primary sm" id="printAll">บันทึก PDF ทั้งเดือน (${emps.length} คน)</button>
+          <button class="btn primary sm" id="printAll">🖨 พิมพ์ / บันทึก PDF — ทั้งเดือน (${emps.length} คน)</button>
+          <button class="btn sm" id="printOne">เฉพาะคนนี้</button>
         </div>
-        <div class="addnote">จะเปิดหน้าสลิปในแท็บใหม่ (คนละหน้า) แล้วเด้งกล่องพิมพ์ให้เอง — เลือกปลายทาง “Save as PDF” กระดาษ A4 · ถ้าแท็บใหม่ถูกบล็อก ให้อนุญาต pop-up ของเว็บนี้</div>
+        <div class="addnote">กดแล้วกล่องพิมพ์ของเบราว์เซอร์จะเด้งขึ้น (คนละหน้า) —
+          <b>อยากได้ไฟล์ PDF:</b> ช่องปลายทาง/Destination เลือก “บันทึกเป็น PDF / Save as PDF” ·
+          <b>อยากพิมพ์กระดาษ:</b> เลือกเครื่องพิมพ์ · ขนาดกระดาษ A4 หรือ A5</div>
       </div>
     </div>
 
@@ -651,9 +640,9 @@ function renderEntry(){
   host.querySelectorAll("[data-jump]").forEach(tr=>tr.addEventListener("click",()=>{
     state.selEmp=tr.dataset.jump; renderEntry(); window.scrollTo({top:0,behavior:"smooth"});
   }));
-  host.querySelector("#printOne").addEventListener("click",()=>openPrintView([[emp,rec]]));
+  host.querySelector("#printOne").addEventListener("click",()=>printSlips([[emp,rec]]));
   host.querySelector("#printAll").addEventListener("click",()=>{
-    openPrintView(emps.map(e=>[e,getRec(e.id,S.period,true)]));
+    printSlips(emps.map(e=>[e,getRec(e.id,S.period,true)]));
   });
 }
 
